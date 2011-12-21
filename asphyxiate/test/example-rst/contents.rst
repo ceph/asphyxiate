@@ -1,5 +1,0 @@
-=========
- Example
-=========
-
-.. doxygenfile:: example.cpp
