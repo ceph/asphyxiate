@@ -43,7 +43,7 @@ class AsphyxiateFileDirective(docutils.parsers.rst.Directive):
             "//compound[@kind='file' and name=$name]",
             name=filename,
             ):
-            refid = node.get('refid')
+            refid = node.attrib['refid']
             path = os.path.join(
                 xml_path,
                 'xml',
