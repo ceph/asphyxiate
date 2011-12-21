@@ -15,10 +15,12 @@ def listify(g):
     def _listify(*args, **kwargs):
         r = g(*args, **kwargs)
         try:
-            return list(r)
+            i = iter(r)
         except TypeError:
             # not iterable, pass through is better than raising here
             return r
+        else:
+            return list(i)
     return _listify
 
 
