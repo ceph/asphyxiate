@@ -191,6 +191,7 @@ def render_memberdef(node, directive):
 
     return fn(node, directive)
 
+
 def render_sectiondef(node, directive):
     TITLES = {
         'func': 'Functions',
@@ -271,7 +272,8 @@ def _render_compounddef_struct(node, directive):
             'briefdescription',
             'detaileddescription',
             'location',
-            # listofallmembers seems to just duplicate the sectiondef>memberdef's
+            # listofallmembers seems to just duplicate the
+            # sectiondef>memberdef's
             'listofallmembers',
             ]:
             continue

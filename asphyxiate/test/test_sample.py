@@ -57,10 +57,7 @@ def _test_sample(name, path):
 
 def test_sample():
     path = os.path.join(os.path.dirname(__file__), 'sample')
-    samples = sorted(
-        fn for fn in os.listdir(path)
-        if not fn.startswith('.')
-        )
+    samples = sorted(fn for fn in os.listdir(path) if not fn.startswith('.'))
     for name in samples:
         def _test():
             return _test_sample(name, os.path.join(path, name))
