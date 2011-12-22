@@ -108,6 +108,40 @@ def _render_memberdef_define(node, directive):
         yield item
 
 
+def _render_memberdef_typedef(node, directive):
+    # TODO skip if @prot != 'public' ?
+    assert node.get('prot') in ['public'], \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    # TODO render @static
+
+    usage = '{name}'.format(
+        name=node.xpath("./name/text()")[0],
+        )
+    contents = []
+    for s in node.xpath("./briefdescription/para/text()"):
+        contents.append(s)
+        contents.append('')
+    for s in node.xpath("./detaileddescription/para/text()"):
+        contents.append(s)
+        contents.append('')
+    directive = sphinx.domains.c.CDomain.directives['type'](
+        name='c:type',
+        arguments=[usage],
+        options={},
+        # sphinx is annoying and assumes content is always a
+        # StringList, never just a list
+        content=docutils.statemachine.StringList(contents),
+        lineno=directive.lineno,
+        content_offset=directive.content_offset,
+        block_text='',
+        state=directive.state,
+        state_machine=directive.state_machine,
+        )
+    for item in directive.run():
+        yield item
+
+
 def render_memberdef(node, directive):
     kind = node.get('kind')
     fn = globals().get('_render_{name}_{kind}'.format(
@@ -123,6 +157,7 @@ def render_sectiondef(node, directive):
     TITLES = dict(
         func='Functions',
         define='Defines',
+        typedef='Types',
         )
     kind = node.get('kind')
     title = TITLES.get(kind)
