@@ -86,28 +86,30 @@ def _render_memberdef_define(node, directive):
     usage = '{name}'.format(
         name=node.xpath("./name/text()")[0],
         )
-    contents = []
-    for s in node.xpath("./briefdescription/para/text()"):
-        contents.append(s)
-        contents.append('')
-    for s in node.xpath("./detaileddescription/para/text()"):
-        contents.append(s)
-        contents.append('')
     directive = sphinx.domains.c.CDomain.directives['macro'](
         name='c:macro',
         arguments=[usage],
         options={},
         # sphinx is annoying and assumes content is always a
         # StringList, never just a list
-        content=docutils.statemachine.StringList(contents),
+        content=docutils.statemachine.StringList([]),
         lineno=directive.lineno,
         content_offset=directive.content_offset,
         block_text='',
         state=directive.state,
         state_machine=directive.state_machine,
         )
-    for item in directive.run():
-        yield item
+    items = list(directive.run())
+    assert items[-1].tagname == 'desc'
+    assert items[-1].children[-1].tagname == 'desc_content'
+    for para in node.xpath("./briefdescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+    for para in node.xpath("./detaileddescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+
+    return items
 
 
 def _render_memberdef_typedef(node, directive):
@@ -120,28 +122,30 @@ def _render_memberdef_typedef(node, directive):
     usage = '{name}'.format(
         name=node.xpath("./name/text()")[0],
         )
-    contents = []
-    for s in node.xpath("./briefdescription/para/text()"):
-        contents.append(s)
-        contents.append('')
-    for s in node.xpath("./detaileddescription/para/text()"):
-        contents.append(s)
-        contents.append('')
     directive = sphinx.domains.c.CDomain.directives['type'](
         name='c:type',
         arguments=[usage],
         options={},
         # sphinx is annoying and assumes content is always a
         # StringList, never just a list
-        content=docutils.statemachine.StringList(contents),
+        content=docutils.statemachine.StringList([]),
         lineno=directive.lineno,
         content_offset=directive.content_offset,
         block_text='',
         state=directive.state,
         state_machine=directive.state_machine,
         )
-    for item in directive.run():
-        yield item
+    items = list(directive.run())
+    assert items[-1].tagname == 'desc'
+    assert items[-1].children[-1].tagname == 'desc_content'
+    for para in node.xpath("./briefdescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+    for para in node.xpath("./detaileddescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+
+    return items
 
 
 def _render_memberdef_variable(node, directive):
@@ -158,28 +162,30 @@ def _render_memberdef_variable(node, directive):
         type=node.xpath("./type/text()")[0],
         name=node.xpath("./name/text()")[0],
         )
-    contents = []
-    for s in node.xpath("./briefdescription/para/text()"):
-        contents.append(s)
-        contents.append('')
-    for s in node.xpath("./detaileddescription/para/text()"):
-        contents.append(s)
-        contents.append('')
     directive = sphinx.domains.c.CDomain.directives['member'](
         name='c:member',
         arguments=[usage],
         options={},
         # sphinx is annoying and assumes content is always a
         # StringList, never just a list
-        content=docutils.statemachine.StringList(contents),
+        content=docutils.statemachine.StringList([]),
         lineno=directive.lineno,
         content_offset=directive.content_offset,
         block_text='',
         state=directive.state,
         state_machine=directive.state_machine,
         )
-    for item in directive.run():
-        yield item
+    items = list(directive.run())
+    assert items[-1].tagname == 'desc'
+    assert items[-1].children[-1].tagname == 'desc_content'
+    for para in node.xpath("./briefdescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+    for para in node.xpath("./detaileddescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+
+    return items
 
 
 def render_memberdef(node, directive):
@@ -243,28 +249,30 @@ def _render_compounddef_struct(node, directive):
     usage = 'struct {name}'.format(
         name=node.xpath("./compoundname/text()")[0],
         )
-    contents = []
-    for s in node.xpath("./briefdescription/para/text()"):
-        contents.append(s)
-        contents.append('')
-    for s in node.xpath("./detaileddescription/para/text()"):
-        contents.append(s)
-        contents.append('')
     directive = sphinx.domains.c.CDomain.directives['type'](
         name='c:type',
         arguments=[usage],
         options={},
         # sphinx is annoying and assumes content is always a
         # StringList, never just a list
-        content=docutils.statemachine.StringList(contents),
+        content=docutils.statemachine.StringList([]),
         lineno=directive.lineno,
         content_offset=directive.content_offset,
         block_text='',
         state=directive.state,
         state_machine=directive.state_machine,
         )
-    for item in directive.run():
-        sec.append(item)
+    items = list(directive.run())
+    assert items[-1].tagname == 'desc'
+    assert items[-1].children[-1].tagname == 'desc_content'
+    for para in node.xpath("./briefdescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+    for para in node.xpath("./detaileddescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+
+    sec.extend(items)
 
     for child in node:
         if child.tag in [
