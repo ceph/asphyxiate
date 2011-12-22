@@ -21,3 +21,4 @@ Functions
 
    :param a: First thing to sum
    :param b: Second thing to sum
+   :returns: Sum of all the things

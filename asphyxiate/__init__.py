@@ -37,6 +37,72 @@ def listify(g):
     return _listify
 
 
+def handle_function_params(node, directive):
+    assert node.get('kind') in ['param'], \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    doc_field_types = sphinx.domains.c.CDomain.directives['function'].doc_field_types
+    # i wish i could access the "typemap" directly, this lookup is fugly
+    (field_type,) = [f for f in doc_field_types if f.name == 'parameter']
+
+    def get_items():
+        for item in node.xpath("./parameteritem"):
+            # TODO more than 1 entry? why would it happen?
+            name = item.xpath("./parameternamelist/parametername/text()")
+            (name,) = name
+            content = docutils.nodes.container()
+            for desc in item.xpath("./parameterdescription/*"):
+                for n in render(desc, directive):
+                    content.append(n)
+            if len(content.children) == 1:
+                # just one child, pass it straight through
+                (content,) = content.children
+
+                # as a special case, if it's a paragraph with a single
+                # text blob, use that; otherwise the resulting html
+                # has unnecessary blank lines
+                if (content.tagname == 'paragraph'
+                    and len(content.children) == 1
+                    and content.children[0].tagname == '#text'):
+                    content = content.children[0]
+
+            yield (name, content)
+
+    items = list(get_items())
+    f = field_type.make_field(
+        # TODO when is this needed
+        types={},
+        domain=directive.domain,
+        items=items,
+        )
+    return f
+
+
+def handle_function_returnval(node, directive):
+    assert node.get('kind') in ['return'], \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    doc_field_types = sphinx.domains.c.CDomain.directives['function'].doc_field_types
+    # i wish i could access the "typemap" directly, this lookup is fugly
+    (field_type,) = [f for f in doc_field_types if f.name == 'returnvalue']
+
+    content = docutils.nodes.container()
+    for desc in node.xpath("./*"):
+        for n in render(desc, directive):
+            content.append(n)
+    if len(content.children) == 1:
+        # just one child, pass it straight through
+        (content,) = content.children
+
+    f = field_type.make_field(
+        # TODO when is this needed
+        types={},
+        domain=directive.domain,
+        item=(None, content),
+        )
+    return f
+
+
 def _render_memberdef_function(node, directive):
     # TODO skip if @prot != 'public' ?
     assert node.get('prot') in ['public'], \
@@ -68,9 +134,29 @@ def _render_memberdef_function(node, directive):
     for para in node.xpath("./briefdescription/*"):
         for p in render(para, directive):
             items[-1].children[-1].append(p)
+
+    # we need to combine parameters and returns from separate subtrees
+    # under a single element, so collect them and remove them from the
+    # doxygen xml (to avoid rendering twice)
+    parameterlist = node.xpath("./detaileddescription//parameterlist[@kind='param']")
+    for n in parameterlist:
+        n.getparent().remove(n)
+
+    returnval = node.xpath("./detaileddescription//simplesect[@kind='return']")
+    for n in returnval:
+        n.getparent().remove(n)
+
     for para in node.xpath("./detaileddescription/*"):
         for p in render(para, directive):
             items[-1].children[-1].append(p)
+
+    l = docutils.nodes.field_list()
+    for n in parameterlist:
+        l.append(handle_function_params(n, directive))
+    for n in returnval:
+        l.append(handle_function_returnval(n, directive))
+    if l.children:
+        items[-1].children[-1].append(l)
 
     return items
 
@@ -380,50 +466,6 @@ def render_listitem(node, directive):
             i.append(item)
         assert child.tail is None
     return [i]
-
-
-def render_parameterlist(node, directive):
-    assert node.get('kind') in ['param'], \
-        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
-
-    l = docutils.nodes.field_list()
-
-    doc_field_types = sphinx.domains.c.CDomain.directives['function'].doc_field_types
-    # i wish i could access the "typemap" directly, this lookup is fugly
-    (field_type,) = [f for f in doc_field_types if f.name == 'parameter']
-
-    def get_items():
-        for item in node.xpath("./parameteritem"):
-            # TODO more than 1 entry? why would it happen?
-            name = item.xpath("./parameternamelist/parametername/text()")
-            (name,) = name
-            content = docutils.nodes.container()
-            for desc in item.xpath("./parameterdescription/*"):
-                for n in render(desc, directive):
-                    content.append(n)
-            if len(content.children) == 1:
-                # just one child, pass it straight through
-                (content,) = content.children
-
-                # as a special case, if it's a paragraph with a single
-                # text blob, use that; otherwise the resulting html
-                # has unnecessary blank lines
-                if (content.tagname == 'paragraph'
-                    and len(content.children) == 1
-                    and content.children[0].tagname == '#text'):
-                    content = content.children[0]
-
-            yield (name, content)
-
-    items = list(get_items())
-    f = field_type.make_field(
-        # TODO when is this needed
-        types={},
-        domain=directive.domain,
-        items=items,
-        )
-    l.append(f)
-    return [l]
 
 
 def render(node, directive):
