@@ -434,9 +434,12 @@ def render_para(node, directive):
         # TODO this isn't always safe.. how do i know when it's safe?
         # basically, <para>foo <itemizedlist>... should eat the
         # whitespace, <para>foo <em>blah</em> should not? does doxygen
-        # even have inline markup? defer until it's actually a
-        # problem.
-        text = node.text.strip()
+        # even have inline markup? try to go with the heuristic of
+        # eating whitespace before a closing tag, defer the rest until
+        # it's actually a problem.
+        text = node.text
+        if len(node) == 0:
+            text = text.strip()
         p.append(docutils.nodes.Text(text))
     for child in node:
         for item in render(child, directive):
@@ -466,6 +469,23 @@ def render_listitem(node, directive):
             i.append(item)
         assert child.tail is None
     return [i]
+
+
+def render_ref(node, directive):
+    assert node.get('kindref') in ['member'], \
+        "cannot handle {node.tag} kindref={node.attrib[kindref]}".format(node=node)
+    # TODO assuming everything always refers to a function, could
+    # follow node/@refid and find out.. currently just shuffling the
+    # raw link string from doxygen to sphinx and hoping for the best
+    usage = node.xpath("./text()")[0]
+    items, _ = sphinx.domains.c.CDomain.roles['func'](
+        typ='c:func',
+        rawtext='',
+        text=usage,
+        lineno=directive.lineno,
+        inliner=directive.state_machine,
+        )
+    return items
 
 
 def render(node, directive):
