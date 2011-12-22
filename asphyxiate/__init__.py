@@ -472,14 +472,17 @@ def render_listitem(node, directive):
 
 
 def render_ref(node, directive):
-    assert node.get('kindref') in ['member'], \
-        "cannot handle {node.tag} kindref={node.attrib[kindref]}".format(node=node)
-    # TODO assuming everything always refers to a function, could
-    # follow node/@refid and find out.. currently just shuffling the
-    # raw link string from doxygen to sphinx and hoping for the best
+    ROLES = dict(
+        member='func',
+        compound='data',
+        )
+    role = ROLES.get(node.get('kindref'))
+    assert role is not None, \
+        "cannot handle {node.tag} kind={node.attrib[kindref]}".format(node=node)
+
     usage = node.xpath("./text()")[0]
-    items, _ = sphinx.domains.c.CDomain.roles['func'](
-        typ='c:func',
+    items, _ = sphinx.domains.c.CDomain.roles[role](
+        typ='{name}:{role}'.format(name=sphinx.domains.c.CDomain.name, role=role),
         rawtext='',
         text=usage,
         lineno=directive.lineno,
