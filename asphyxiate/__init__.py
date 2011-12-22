@@ -142,6 +142,44 @@ def _render_memberdef_typedef(node, directive):
         yield item
 
 
+def _render_memberdef_variable(node, directive):
+    # TODO this is really about struct members, currently
+    # TODO skip if @prot != 'public' ?
+    assert node.get('prot') in ['public'], \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    # TODO render @static @mutable
+    # TODO when do variables have @argsstring
+    # TODO what is @inbodydescription
+
+    usage = '{type} {name}'.format(
+        type=node.xpath("./type/text()")[0],
+        name=node.xpath("./name/text()")[0],
+        )
+    contents = []
+    for s in node.xpath("./briefdescription/para/text()"):
+        contents.append(s)
+        contents.append('')
+    for s in node.xpath("./detaileddescription/para/text()"):
+        contents.append(s)
+        contents.append('')
+    directive = sphinx.domains.c.CDomain.directives['member'](
+        name='c:member',
+        arguments=[usage],
+        options={},
+        # sphinx is annoying and assumes content is always a
+        # StringList, never just a list
+        content=docutils.statemachine.StringList(contents),
+        lineno=directive.lineno,
+        content_offset=directive.content_offset,
+        block_text='',
+        state=directive.state,
+        state_machine=directive.state_machine,
+        )
+    for item in directive.run():
+        yield item
+
+
 def render_memberdef(node, directive):
     kind = node.get('kind')
     fn = globals().get('_render_{name}_{kind}'.format(
@@ -154,11 +192,13 @@ def render_memberdef(node, directive):
     return fn(node, directive)
 
 def render_sectiondef(node, directive):
-    TITLES = dict(
-        func='Functions',
-        define='Defines',
-        typedef='Types',
-        )
+    TITLES = {
+        'func': 'Functions',
+        'define': 'Defines',
+        'typedef': 'Types',
+        # TODO this is really about struct members, currently
+        'public-attrib': 'Members',
+        }
     kind = node.get('kind')
     title = TITLES.get(kind)
     assert title is not None, \
@@ -173,10 +213,7 @@ def render_sectiondef(node, directive):
     return [sec]
 
 
-def render_compounddef(node, directive):
-    assert node.get('kind') in ['file'], \
-        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
-
+def _render_compounddef_file(node, directive):
     # TODO render compoundname, briefdescription, detaileddescription
     # listofallmembers seems to just duplicate the sectiondef>memberdef's
     for child in node:
@@ -192,6 +229,69 @@ def render_compounddef(node, directive):
             yield item
 
 
+def _render_compounddef_struct(node, directive):
+    # TODO skip if @prot != 'public' ?
+    title = 'Struct {name}'.format(
+        name=node.xpath("./compoundname/text()")[0],
+        )
+    sec = docutils.nodes.section(ids=title)
+    sec.append(docutils.nodes.title(text=title))
+
+    usage = 'struct {name}'.format(
+        name=node.xpath("./compoundname/text()")[0],
+        )
+    contents = []
+    for s in node.xpath("./briefdescription/para/text()"):
+        contents.append(s)
+        contents.append('')
+    for s in node.xpath("./detaileddescription/para/text()"):
+        contents.append(s)
+        contents.append('')
+    directive = sphinx.domains.c.CDomain.directives['type'](
+        name='c:type',
+        arguments=[usage],
+        options={},
+        # sphinx is annoying and assumes content is always a
+        # StringList, never just a list
+        content=docutils.statemachine.StringList(contents),
+        lineno=directive.lineno,
+        content_offset=directive.content_offset,
+        block_text='',
+        state=directive.state,
+        state_machine=directive.state_machine,
+        )
+    for item in directive.run():
+        sec.append(item)
+
+    for child in node:
+        if child.tag in [
+            'compoundname',
+            # not sure what use this would be
+            'includes',
+            'briefdescription',
+            'detaileddescription',
+            'location',
+            # listofallmembers seems to just duplicate the sectiondef>memberdef's
+            'listofallmembers',
+            ]:
+            continue
+        for item in render(child, directive):
+            sec.append(item)
+    return [sec]
+
+
+def render_compounddef(node, directive):
+    kind = node.get('kind')
+    fn = globals().get('_render_{name}_{kind}'.format(
+            name=node.tag,
+            kind=kind,
+            ))
+    assert fn is not None, \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    return fn(node, directive)
+
+
 def render_compound(node, directive):
     assert node.get('kind') in ['file'], \
         "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
@@ -205,6 +305,25 @@ def render_compound(node, directive):
         '{refid}.xml'.format(refid=refid),
         )
     log.getChild('render_compound').debug('Parsing doxygen xml from %s', path)
+    xml = etree.parse(path)
+    for node in xml.getroot():
+        for item in render(node, directive):
+            yield item
+
+
+def render_innerclass(node, directive):
+    # TODO skip if @prot != 'public' ?
+    refid = node.attrib['refid']
+    env = directive.state.document.settings.env
+    xml_path = env.config.asphyxiate_doxygen_xml
+    path = os.path.join(
+        xml_path,
+        'xml',
+        '{refid}.xml'.format(refid=refid),
+        )
+    log.getChild('render_innerclass').debug(
+        'Parsing doxygen xml from %s', path,
+        )
     xml = etree.parse(path)
     for node in xml.getroot():
         for item in render(node, directive):
