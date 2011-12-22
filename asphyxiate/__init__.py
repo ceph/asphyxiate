@@ -213,7 +213,7 @@ def render_sectiondef(node, directive):
     assert title is not None, \
         "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
 
-    sec = docutils.nodes.section(ids=kind)
+    sec = docutils.nodes.section(ids=[kind])
     sec.append(docutils.nodes.title(text=title))
 
     for child in node.xpath("./*[not(self::location)]"):
@@ -243,7 +243,7 @@ def _render_compounddef_struct(node, directive):
     title = 'Struct {name}'.format(
         name=node.xpath("./compoundname/text()")[0],
         )
-    sec = docutils.nodes.section(ids=title)
+    sec = docutils.nodes.section(ids=[title])
     sec.append(docutils.nodes.title(text=title))
 
     usage = 'struct {name}'.format(
