@@ -77,12 +77,21 @@ def render_memberdef(node, directive):
 
 
 def render_sectiondef(node, directive):
-    assert node.get('kind') in ['func'], \
+    TITLES = dict(
+        func='Functions',
+        )
+    kind = node.get('kind')
+    title = TITLES.get(kind)
+    assert title is not None, \
         "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    sec = docutils.nodes.section(ids=kind)
+    sec.append(docutils.nodes.title(text=title))
 
     for child in node.xpath("./*[not(self::location)]"):
         for item in render(child, directive):
-            yield item
+            sec.append(item)
+    return [sec]
 
 
 def render_compounddef(node, directive):
