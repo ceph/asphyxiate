@@ -37,10 +37,7 @@ def listify(g):
     return _listify
 
 
-def render_memberdef(node, directive):
-    assert node.get('kind') in ['function'], \
-        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
-
+def _render_memberdef_function(node, directive):
     # TODO skip if @prot != 'public' ?
     assert node.get('prot') in ['public'], \
         "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
@@ -75,6 +72,17 @@ def render_memberdef(node, directive):
     for item in directive.run():
         yield item
 
+
+def render_memberdef(node, directive):
+    kind = node.get('kind')
+    fn = globals().get('_render_{name}_{kind}'.format(
+            name=node.tag,
+            kind=kind,
+            ))
+    assert fn is not None, \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    return fn(node, directive)
 
 def render_sectiondef(node, directive):
     TITLES = dict(
