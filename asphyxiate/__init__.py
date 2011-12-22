@@ -499,6 +499,7 @@ def render(node, directive):
         yield docutils.nodes.warning(
             "",
             docutils.nodes.paragraph("", "", docutils.nodes.Text(warning)),
+            docutils.nodes.literal_block(text=etree.tostring(node, pretty_print=True).rstrip()),
             )
         yield directive.state.document.reporter.warning(
             warning,
