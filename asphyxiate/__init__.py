@@ -382,6 +382,50 @@ def render_listitem(node, directive):
     return [i]
 
 
+def render_parameterlist(node, directive):
+    assert node.get('kind') in ['param'], \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    l = docutils.nodes.field_list()
+
+    doc_field_types = sphinx.domains.c.CDomain.directives['function'].doc_field_types
+    # i wish i could access the "typemap" directly, this lookup is fugly
+    (field_type,) = [f for f in doc_field_types if f.name == 'parameter']
+
+    def get_items():
+        for item in node.xpath("./parameteritem"):
+            # TODO more than 1 entry? why would it happen?
+            name = item.xpath("./parameternamelist/parametername/text()")
+            (name,) = name
+            content = docutils.nodes.container()
+            for desc in item.xpath("./parameterdescription/*"):
+                for n in render(desc, directive):
+                    content.append(n)
+            if len(content.children) == 1:
+                # just one child, pass it straight through
+                (content,) = content.children
+
+                # as a special case, if it's a paragraph with a single
+                # text blob, use that; otherwise the resulting html
+                # has unnecessary blank lines
+                if (content.tagname == 'paragraph'
+                    and len(content.children) == 1
+                    and content.children[0].tagname == '#text'):
+                    content = content.children[0]
+
+            yield (name, content)
+
+    items = list(get_items())
+    f = field_type.make_field(
+        # TODO when is this needed
+        types={},
+        domain=directive.domain,
+        items=items,
+        )
+    l.append(f)
+    return [l]
+
+
 def render(node, directive):
     log.getChild('render').debug('Rendering %s', node.tag)
     fn = globals().get('render_{name}'.format(name=node.tag))
