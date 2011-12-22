@@ -49,28 +49,30 @@ def _render_memberdef_function(node, directive):
         name=node.xpath("./name/text()")[0],
         argsstring=node.xpath("./argsstring/text()")[0],
         )
-    contents = []
-    for s in node.xpath("./briefdescription/para/text()"):
-        contents.append(s)
-        contents.append('')
-    for s in node.xpath("./detaileddescription/para/text()"):
-        contents.append(s)
-        contents.append('')
     directive = sphinx.domains.c.CDomain.directives['function'](
         name='c:function',
         arguments=[usage],
         options={},
         # sphinx is annoying and assumes content is always a
         # StringList, never just a list
-        content=docutils.statemachine.StringList(contents),
+        content=docutils.statemachine.StringList([]),
         lineno=directive.lineno,
         content_offset=directive.content_offset,
         block_text='',
         state=directive.state,
         state_machine=directive.state_machine,
         )
-    for item in directive.run():
-        yield item
+    items = list(directive.run())
+    assert items[-1].tagname == 'desc'
+    assert items[-1].children[-1].tagname == 'desc_content'
+    for para in node.xpath("./briefdescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+    for para in node.xpath("./detaileddescription/*"):
+        for p in render(para, directive):
+            items[-1].children[-1].append(p)
+
+    return items
 
 
 def _render_memberdef_define(node, directive):
@@ -330,6 +332,46 @@ def render_innerclass(node, directive):
     for node in xml.getroot():
         for item in render(node, directive):
             yield item
+
+
+def render_para(node, directive):
+    p = docutils.nodes.paragraph()
+    if node.text is not None:
+        # TODO this isn't always safe.. how do i know when it's safe?
+        # basically, <para>foo <itemizedlist>... should eat the
+        # whitespace, <para>foo <em>blah</em> should not? does doxygen
+        # even have inline markup? defer until it's actually a
+        # problem.
+        text = node.text.strip()
+        p.append(docutils.nodes.Text(text))
+    for child in node:
+        for item in render(child, directive):
+            p.append(item)
+        if child.tail is not None:
+            tail = child.tail.strip()
+            if tail:
+                p.append(docutils.nodes.Text(tail))
+    return [p]
+
+
+def render_itemizedlist(node, directive):
+    l = docutils.nodes.bullet_list()
+    assert node.text is None or node.text.strip() == ''
+    for child in node:
+        for item in render(child, directive):
+            l.append(item)
+        assert child.tail is None
+    return [l]
+
+
+def render_listitem(node, directive):
+    i = docutils.nodes.list_item()
+    assert node.text is None or node.text.strip() == ''
+    for child in node:
+        for item in render(child, directive):
+            i.append(item)
+        assert child.tail is None
+    return [i]
 
 
 def render(node, directive):
