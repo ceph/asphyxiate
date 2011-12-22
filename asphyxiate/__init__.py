@@ -1,9 +1,20 @@
 import docutils.parsers.rst
+import logging
 import os
 import sphinx.errors
 import sys
 from lxml import etree
 import docutils.nodes
+
+
+log = logging.getLogger(__name__)
+
+# kludge for python <2.7
+if not hasattr(log, 'getChild'):
+
+    def getChild(name):
+        return logging.getLogger(log.name + '.' + name)
+    log.getChild = getChild
 
 
 class AsphyxiateError(sphinx.errors.SphinxError):
@@ -38,7 +49,9 @@ class AsphyxiateFileDirective(docutils.parsers.rst.Directive):
             raise AsphyxiateError(
                 'missing config setting asphyxiate_doxygen_xml')
 
-        index_xml = etree.parse(os.path.join(xml_path, 'xml', 'index.xml'))
+        path = os.path.join(xml_path, 'xml', 'index.xml')
+        log.debug('Parsing xml: %s', path)
+        index_xml = etree.parse(path)
         for node in index_xml.xpath(
             "//compound[@kind='file' and name=$name]",
             name=filename,
@@ -60,6 +73,16 @@ def setup(app):
         # function, but Sphinx dictates this function name.. tell nose
         # to keep its.. nose.. out of other people's business
         return
+
+    # sphinx isn't helpful for extensions wanting to log, so bypass it and
+    # go straight to stderr
+    log.propagate = False
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter(fmt='%(name)s:%(levelname)s: %(message)s'),
+        )
+    log.addHandler(handler)
+    log.setLevel(logging.DEBUG)  # TODO take this from configuration
 
     app.add_directive(
         "doxygenfile",

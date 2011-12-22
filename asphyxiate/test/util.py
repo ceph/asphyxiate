@@ -73,10 +73,17 @@ asphyxiate_doxygen_xml = {xml!r}
     (out, err) = p.communicate()
     if out:
         print '\n'.join('sphinx: ' + l for l in out.splitlines())
-    if err:
+    err = err.splitlines()
+    # don't fail if it's all debug logging
+    if (any(line.split(':', 1)[0].split('.', 1)[0] != 'asphyxiate'
+            for line in err)
+        or any(line.split(':', 2)[1] != 'DEBUG'
+               for line in err)):
         raise RuntimeError(
             'Sphinx gave warnings:\n'
-            + '\n'.join('  ' + l for l in err.splitlines()),
+            + '\n'.join('  ' + l for l in err),
             )
+    else:
+        print '\n'.join('sphinx stderr: ' + l for l in err)
     if p.returncode != 0:
         raise RuntimeError('Sphinx failed: %r' % p.returncode)
