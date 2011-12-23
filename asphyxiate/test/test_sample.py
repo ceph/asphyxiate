@@ -28,10 +28,13 @@ def _test_sample(name, path):
     doc = lxml.html.parse(os.path.join(html, 'contents.html'))
     got = doc.xpath("id('got')/*")
     want = doc.xpath("id('want')/*")
+    have_want = bool(want)
+
     assert got[0].tag == 'h1'
     del got[0]
-    assert want[0].tag == 'h1'
-    del want[0]
+    if have_want:
+        assert want[0].tag == 'h1'
+        del want[0]
     for treelist in [got, want]:
         for tree in treelist:
             for node in tree.xpath('//*[@id]'):
@@ -63,7 +66,8 @@ def _test_sample(name, path):
     # in every identifier
     want = want.replace('XYZZY', '')
 
-    eq(got, want)
+    if have_want:
+        eq(got, want)
 
 
 def test_sample():
