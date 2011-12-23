@@ -535,6 +535,26 @@ def render_simplesect(node, directive):
     return fn(node, directive)
 
 
+def render_includes(node, directive):
+    # TODO should this be shown?
+    return []
+
+
+def render_includedby(node, directive):
+    # TODO should this be shown?
+    return []
+
+
+def render_incdepgraph(node, directive):
+    # TODO should this be shown?
+    return []
+
+
+def render_simplesectsep(node, directive):
+    # TODO should this be shown? <p></p>? <br/>?
+    return []
+
+
 def render(node, directive):
     log.getChild('render').debug('Rendering %s', node.tag)
     fn = globals().get('render_{name}'.format(name=node.tag))
