@@ -491,6 +491,50 @@ def render_ref(node, directive):
     return items
 
 
+def _render_simplesect_warning(node, directive):
+    w = docutils.nodes.warning()
+    for n in node:
+        w.extend(render(n, directive))
+    return [w]
+
+
+def _render_simplesect_note(node, directive):
+    note = docutils.nodes.note()
+    for n in node:
+        note.extend(render(n, directive))
+    return [note]
+
+
+def _render_simplesect_pre(node, directive):
+    p = docutils.nodes.admonition()
+    p['classes'].append('admonition-precondition')
+    p.append(docutils.nodes.title(text='Precondition'))
+    for n in node:
+        p.extend(render(n, directive))
+    return [p]
+
+
+def _render_simplesect_post(node, directive):
+    p = docutils.nodes.admonition()
+    p['classes'].append('admonition-postcondition')
+    p.append(docutils.nodes.title(text='Postcondition'))
+    for n in node:
+        p.extend(render(n, directive))
+    return [p]
+
+
+def render_simplesect(node, directive):
+    kind = node.get('kind')
+    fn = globals().get('_render_{name}_{kind}'.format(
+            name=node.tag,
+            kind=kind,
+            ))
+    assert fn is not None, \
+        "cannot handle {node.tag} kind={node.attrib[kind]}".format(node=node)
+
+    return fn(node, directive)
+
+
 def render(node, directive):
     log.getChild('render').debug('Rendering %s', node.tag)
     fn = globals().get('render_{name}'.format(name=node.tag))

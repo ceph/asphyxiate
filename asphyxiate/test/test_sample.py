@@ -45,8 +45,16 @@ def _test_sample(name, path):
     for node in got.xpath("//span[not(node())]"):
         node.getparent().remove(node)
 
+    # annoying whitespace differences, not relevant most of the time
+    for node in got.xpath("//p[not(node())]"):
+        node.getparent().remove(node)
+
     got = lxml.html.tostring(got, pretty_print=True)
     want = lxml.html.tostring(want, pretty_print=True)
+
+    # more annoying whitespace differences, not relevant most of the time
+    got = got.replace('\n\n', '\n')
+    want = want.replace('\n\n', '\n')
 
     # they can't have the same identifiers, so "want" side puts XYZZY
     # in every identifier
