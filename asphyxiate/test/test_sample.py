@@ -32,25 +32,28 @@ def _test_sample(name, path):
     del got[0]
     assert want[0].tag == 'h1'
     del want[0]
-    (got,) = got
-    (want,) = want
-    for tree in [got, want]:
-        for node in tree.xpath('//*[@id]'):
-            del node.attrib['id']
-        for node in tree.xpath('//*[@href]'):
-            del node.attrib['href']
+    for treelist in [got, want]:
+        for tree in treelist:
+            for node in tree.xpath('//*[@id]'):
+                del node.attrib['id']
+            for node in tree.xpath('//*[@href]'):
+                del node.attrib['href']
 
     # for some reason, i get 8*'<span></span>' when i generate the
     # docutils nodes in render_sectionddef
-    for node in got.xpath("//span[not(node())]"):
-        node.getparent().remove(node)
+    for tree in got:
+        for node in tree.xpath("//span[not(node())]"):
+            node.getparent().remove(node)
 
     # annoying whitespace differences, not relevant most of the time
-    for node in got.xpath("//p[not(node())]"):
-        node.getparent().remove(node)
+    for tree in got:
+        for node in tree.xpath("//p[not(node())]"):
+            node.getparent().remove(node)
 
-    got = lxml.html.tostring(got, pretty_print=True)
-    want = lxml.html.tostring(want, pretty_print=True)
+    got = '\n'.join(lxml.html.tostring(tree, pretty_print=True)
+                    for tree in got)
+    want = '\n'.join(lxml.html.tostring(tree, pretty_print=True)
+                     for tree in want)
 
     # more annoying whitespace differences, not relevant most of the time
     got = got.replace('\n\n', '\n')
