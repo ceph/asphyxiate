@@ -66,6 +66,13 @@ def _test_sample(name, path):
     # in every identifier
     want = want.replace('XYZZY', '')
 
+    # for cpp
+    # want = want.replace(
+    #     '(</big>int<em>&#160;a</em>, int<em>&#160;b</em><big>)',
+    #     '(</big>int <em>a</em>, int <em>b</em><big>)',
+    #     )
+
+    # only compare if we really have some expectations
     if have_want:
         eq(got, want)
 

@@ -7,6 +7,7 @@ import sys
 from lxml import etree
 import docutils.nodes
 import sphinx.domains.c
+# import sphinx.domains.cpp
 
 
 log = logging.getLogger(__name__)
@@ -115,6 +116,8 @@ def _render_memberdef_function(node, directive):
         name=node.xpath("./name/text()")[0],
         argsstring=node.xpath("./argsstring/text()")[0],
         )
+    # directive = sphinx.domains.cpp.CPPDomain.directives['function'](
+    #     name='cpp:function',
     directive = sphinx.domains.c.CDomain.directives['function'](
         name='c:function',
         arguments=[usage],
