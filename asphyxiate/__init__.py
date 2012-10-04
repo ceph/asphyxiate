@@ -555,6 +555,14 @@ def render_simplesectsep(node, directive):
     return []
 
 
+# TODO xrefsect
+#   <xrefsect id="bug_1_bug000006"><xreftitle>Bug</xreftitle><xrefdescription><para>this should be void</para></xrefdescription></xrefsect>
+# TODO "@bug"?
+
+# def render_xrefsect(node, directive):
+#     print 'TODO', repr(etree.tostring(node))
+#     return []
+
 def render(node, directive):
     log.getChild('render').debug('Rendering %s', node.tag)
     fn = globals().get('render_{name}'.format(name=node.tag))
