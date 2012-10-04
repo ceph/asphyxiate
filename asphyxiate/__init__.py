@@ -594,10 +594,14 @@ class AsphyxiateFileDirective(docutils.parsers.rst.Directive):
         path = os.path.join(xml_path, 'xml', 'index.xml')
         log.debug('Parsing xml: %s', path)
         index_xml = etree.parse(path)
-        for node in index_xml.xpath(
+        # TODO handle no matches
+        matches = index_xml.xpath(
             "//compound[@kind='file' and name=$name]",
             name=filename,
-            ):
+            )
+        # if not matches:
+        #     raise RuntimeError('TODO')
+        for node in matches:
             for item in render(node, self):
                 yield item
 
