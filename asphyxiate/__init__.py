@@ -556,7 +556,8 @@ def render_simplesectsep(node, directive):
 
 
 def render(node, directive):
-    log.getChild('render').debug('Rendering %s', node.tag)
+    log.getChild('render').debug('Rendering %s %s:%d', node.tag, 
+                                 node.base, node.sourceline)
     fn = globals().get('render_{name}'.format(name=node.tag))
     if fn is None:
         warning = 'asphyxiate: {msg} {tag!r}'.format(
